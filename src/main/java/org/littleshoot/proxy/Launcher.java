@@ -57,7 +57,7 @@ public class Launcher {
                 "Display command line help.");
         options.addOption(null, OPTION_MITM, false, "Run as man in the middle.");
         options.addOption(null, OPTION_SSL, false, "Encript inbond connection.");
-        options.addOption(null, OPTION_FILE, false, "Config file.");
+        options.addOption(null, OPTION_FILE, true, "Config file.");
         final CommandLineParser parser = new PosixParser();
         final CommandLine cmd;
         try {
