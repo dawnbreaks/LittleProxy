@@ -573,6 +573,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 		private int upstreamProxyPort;
 		private boolean upstreamProxySsl;
 		private String upstreamProxyKeyStoreFile;
+		 private SslEngineSource upstreamProxySslEngineSource = null;
 
         private DefaultHttpProxyServerBootstrap() {
         }
@@ -624,7 +625,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
             this.upstreamProxyKeyStoreFile = props.getProperty("upstream_proxy_key_store_file", "littleproxy_keystore.jks");
             
             if(upstreamProxyHost !=null && upstreamProxyPort != -1){
-            	this.sslEngineSource = new SelfSignedSslEngineSource(this.upstreamProxyKeyStoreFile);
+            	this.upstreamProxySslEngineSource = new SelfSignedSslEngineSource(this.upstreamProxyKeyStoreFile);
             	 LOG.info("Chain proxy info:upstreamProxyHost=" + this.upstreamProxyHost + "|upstreamProxyPort=" + this.upstreamProxyPort + "|upstreamProxySsl=" + this.upstreamProxySsl);
             	chainProxyManager = new ChainedProxyManager(){
 					@Override
@@ -652,7 +653,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
 
                 @Override
                 public SSLEngine newSslEngine() {
-                    return sslEngineSource.newSslEngine();
+                    return upstreamProxySslEngineSource.newSslEngine();
                 }
                 
                 @Override
