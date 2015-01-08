@@ -92,6 +92,7 @@ public class Launcher {
 
         System.out.println("About to start server on port: " + port);
         String configFile = cmd.hasOption(OPTION_FILE)?cmd.getOptionValue(OPTION_FILE):"./littleproxy.properties";
+        LOG.info("Bootstrap from file '" + configFile + "'.");
         HttpProxyServerBootstrap bootstrap = DefaultHttpProxyServer
                 .bootstrapFromFile(configFile)
                 .withPort(port)
