@@ -662,7 +662,7 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                                 DefaultHttpProxyServerBootstrap.this.upstreamProxyPort);
                     } catch (UnknownHostException uhe) {
                         throw new RuntimeException(
-                                "Unable to resolve host?!", e);
+                                "Unable to resolve host?!", uhe);
                     }
                 }
             };
