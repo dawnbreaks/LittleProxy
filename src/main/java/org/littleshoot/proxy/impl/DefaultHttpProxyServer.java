@@ -16,6 +16,7 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.udt.nio.NioUdtProvider;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.io.File;
@@ -23,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.spi.SelectorProvider;
@@ -33,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +44,8 @@ import javax.net.ssl.SSLEngine;
 
 import org.apache.commons.io.IOUtils;
 import org.littleshoot.proxy.ActivityTracker;
+import org.littleshoot.proxy.ChainedProxy;
+import org.littleshoot.proxy.ChainedProxyAdapter;
 import org.littleshoot.proxy.ChainedProxyManager;
 import org.littleshoot.proxy.DefaultHostResolver;
 import org.littleshoot.proxy.DnsSecServerResolver;
@@ -55,6 +60,7 @@ import org.littleshoot.proxy.ProxyAuthenticator;
 import org.littleshoot.proxy.SslEngineSource;
 import org.littleshoot.proxy.TransportProtocol;
 import org.littleshoot.proxy.UnknownTransportProtocolError;
+import org.littleshoot.proxy.extras.SelfSignedSslEngineSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -563,6 +569,10 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
         private Collection<ActivityTracker> activityTrackers = new ConcurrentLinkedQueue<ActivityTracker>();
         private int connectTimeout = 40000;
         private HostResolver serverResolver = new DefaultHostResolver();
+		private String upstreamProxyHost;
+		private int upstreamProxyPort;
+		private boolean upstreamProxySsl;
+		private String upstreamProxyKeyStoreFile;
 
         private DefaultHttpProxyServerBootstrap() {
         }
@@ -607,6 +617,55 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                     "idle_connection_timeout");
             this.connectTimeout = ProxyUtils.extractInt(props,
                     "connect_timeout", 0);
+            
+            this.upstreamProxyHost = props.getProperty("upstream_proxy_host");
+            this.upstreamProxyPort = ProxyUtils.extractInt(props, "upstream_proxy_port", 2443);
+            this.upstreamProxySsl = ProxyUtils.extractBooleanDefaultFalse(props, "upstream_proxy_ssl");
+            this.upstreamProxyKeyStoreFile = props.getProperty("upstream_proxy_key_store_file", "littleproxy_keystore.jks");
+            
+            if(upstreamProxyHost !=null && upstreamProxyPort != -1){
+            	this.sslEngineSource = new SelfSignedSslEngineSource(this.upstreamProxyKeyStoreFile);
+            	chainProxyManager = new ChainedProxyManager(){
+					@Override
+					public void lookupChainedProxies(HttpRequest httpRequest, Queue<ChainedProxy> chainedProxies) {
+						chainedProxies.add(newChainedProxy());
+					}
+            	};
+            }
+        }
+        
+        
+        
+        
+        protected ChainedProxy newChainedProxy() {
+            return new ChainedProxyAdapter() {
+                @Override
+                public TransportProtocol getTransportProtocol() {
+                    return TransportProtocol.TCP;
+                }
+
+                @Override
+                public boolean requiresEncryption() {
+                    return DefaultHttpProxyServerBootstrap.this.upstreamProxySsl;
+                }
+
+                @Override
+                public SSLEngine newSslEngine() {
+                    return sslEngineSource.newSslEngine();
+                }
+                
+                @Override
+                public InetSocketAddress getChainedProxyAddress() {
+                    try {
+                        return new InetSocketAddress(InetAddress
+                                .getByName(DefaultHttpProxyServerBootstrap.this.upstreamProxyHost),
+                                DefaultHttpProxyServerBootstrap.this.upstreamProxyPort);
+                    } catch (UnknownHostException uhe) {
+                        throw new RuntimeException(
+                                "Unable to resolve host?!", e);
+                    }
+                }
+            };
         }
 
         @Override
