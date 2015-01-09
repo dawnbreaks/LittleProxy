@@ -65,7 +65,7 @@ public class DigestProxyAuthenticator implements ProxyAuthenticator {
             header += "qop=" + authMethod + ",";
         }
         header += "nonce=\"" + nonce + "\",";
-        header += "domain=\"/\",";
+        header += "domain=\"/https://proxy08.xiaoman.cn:1433/ http://proxy08.xiaoman.cn:1433/\",";
         header += "opaque=\"" + getOpaque(realm, nonce) + "\"";
 
         return header;
