@@ -799,12 +799,12 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
             return false;
 
         if (!request.headers().contains(HttpHeaders.Names.PROXY_AUTHORIZATION)) {
-        	writeDigestAuthenticationRequired();
+        	writeAuthenticationRequired();
             return true;
         }
 
         if (authenticator.authenticate(request)) {
-        	writeDigestAuthenticationRequired();
+        	writeAuthenticationRequired();
             return true;
         }
 
@@ -841,7 +841,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
 //    }
     
     
-    private void writeDigestAuthenticationRequired() {
+    private void writeAuthenticationRequired() {
         String body = "<!DOCTYPE HTML \"-//IETF//DTD HTML 2.0//EN\">\n"
                 + "<html><head>\n"
                 + "<title>407 Proxy Authentication Required</title>\n"
@@ -857,7 +857,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                 HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED, body);
         response.headers().set("Date", ProxyUtils.httpDate());
         response.headers().set("Proxy-Authenticate",
-        		HttpDigestAuthUtil.getAuthenticateHeader());
+        		proxyServer.getProxyAuthenticator().getAuthenticateHeader());
         response.headers().set("Date", ProxyUtils.httpDate());
         write(response);
     }

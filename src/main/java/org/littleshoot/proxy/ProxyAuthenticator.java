@@ -18,4 +18,6 @@ public interface ProxyAuthenticator {
      *         <code>false</code>.
      */
     boolean authenticate(HttpRequest request);
+    
+    String getAuthenticateHeader();
 }

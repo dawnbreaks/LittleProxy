@@ -50,4 +50,9 @@ public class UsernamePasswordAuthenticatingProxyTest extends BaseProxyTest
     protected boolean isAuthenticating() {
         return true;
     }
+
+	@Override
+	public String getAuthenticateHeader() {
+		return "Basic realm=\"Restricted Files\"";
+	}
 }
