@@ -22,7 +22,7 @@ public class DigestProxyAuthenticator implements ProxyAuthenticator {
 	private static final String authMethod = "auth";
 	private static final String userName = "lubin";
 	private static final String password = "lubin";
-	private static final String realm = "Restricted Files";
+	private static final String realm = "proxy08.xiaoman.cn";
 
 	private static String nonce = calculateNonce();
 	
@@ -65,7 +65,7 @@ public class DigestProxyAuthenticator implements ProxyAuthenticator {
             header += "qop=" + authMethod + ",";
         }
         header += "nonce=\"" + nonce + "\",";
-        header += "domain=\"/https://proxy08.xiaoman.cn:1433/ http://proxy08.xiaoman.cn:1433/\",";
+        header += "domain=\"/https://*.*:*/ http://*.*:*/\",";
         header += "opaque=\"" + getOpaque(realm, nonce) + "\"";
 
         return header;
