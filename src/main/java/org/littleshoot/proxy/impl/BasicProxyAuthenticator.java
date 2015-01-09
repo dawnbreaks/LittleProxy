@@ -29,8 +29,6 @@ public class BasicProxyAuthenticator implements ProxyAuthenticator {
 				if(userName.equals("lubin") && password.equals("lubin")){
 					return true;
 				}
-			}else{
-				return HttpDigestAuthUtil.authenticate(request);
 			}
 		}catch(Exception e){
 			LOG.error("SimpleProxyAuthenticator|authenticate failed.", e);
