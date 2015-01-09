@@ -799,7 +799,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
             return false;
 
         if (!request.headers().contains(HttpHeaders.Names.PROXY_AUTHORIZATION)) {
-            writeAuthenticationRequired();
+        	writeDigestAuthenticationRequired();
             return true;
         }
 
@@ -817,24 +817,47 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                     ":");
             if (!authenticator.authenticate(userName,
                     password)) {
-                writeAuthenticationRequired();
+            	writeDigestAuthenticationRequired();
                 return true;
             }
         } catch (UnsupportedEncodingException e) {
             LOG.error("Could not decode?", e);
         }
 
-        LOG.info("Got proxy authorization!");
+        LOG.debug("Got proxy authorization!");
         // We need to remove the header before sending the request on.
         String authentication = request.headers().get(
                 HttpHeaders.Names.PROXY_AUTHORIZATION);
-        LOG.info(authentication);
+        LOG.debug(authentication);
         request.headers().remove(HttpHeaders.Names.PROXY_AUTHORIZATION);
         authenticated.set(true);
         return false;
     }
+    
 
-    private void writeAuthenticationRequired() {
+//    private void writeAuthenticationRequired() {
+//        String body = "<!DOCTYPE HTML \"-//IETF//DTD HTML 2.0//EN\">\n"
+//                + "<html><head>\n"
+//                + "<title>407 Proxy Authentication Required</title>\n"
+//                + "</head><body>\n"
+//                + "<h1>Proxy Authentication Required</h1>\n"
+//                + "<p>This server could not verify that you\n"
+//                + "are authorized to access the document\n"
+//                + "requested.  Either you supplied the wrong\n"
+//                + "credentials (e.g., bad password), or your\n"
+//                + "browser doesn't understand how to supply\n"
+//                + "the credentials required.</p>\n" + "</body></html>\n";
+//        DefaultFullHttpResponse response = responseFor(HttpVersion.HTTP_1_1,
+//                HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED, body);
+//        response.headers().set("Date", ProxyUtils.httpDate());
+//        response.headers().set("Proxy-Authenticate",
+//                "Basic realm=\"Restricted Files\"");
+//        response.headers().set("Date", ProxyUtils.httpDate());
+//        write(response);
+//    }
+    
+    
+    private void writeDigestAuthenticationRequired() {
         String body = "<!DOCTYPE HTML \"-//IETF//DTD HTML 2.0//EN\">\n"
                 + "<html><head>\n"
                 + "<title>407 Proxy Authentication Required</title>\n"
@@ -850,11 +873,12 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                 HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED, body);
         response.headers().set("Date", ProxyUtils.httpDate());
         response.headers().set("Proxy-Authenticate",
-                "Basic realm=\"Restricted Files\"");
+        		HttpDigestAuthUtil.getAuthenticateHeader());
         response.headers().set("Date", ProxyUtils.httpDate());
         write(response);
     }
 
+    
     /***************************************************************************
      * Request/Response Rewriting
      **************************************************************************/
