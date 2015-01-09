@@ -826,7 +826,7 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
             return true;
         }
 
-        if (authenticator.authenticate(request)) {
+        if (!authenticator.authenticate(request)) {
         	writeAuthenticationRequired();
             return true;
         }
