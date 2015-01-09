@@ -40,6 +40,8 @@ public class Launcher {
     
     private static final String OPTION_FILE = "file";
     
+    private static final String OPTION_PROXY_AUTHENTICATOR = "proxy_authenticator";
+    
    
     
 
@@ -48,8 +50,11 @@ public class Launcher {
      * 
      * @param args
      *            Any command line arguments.
+     * @throws ClassNotFoundException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
      */
-    public static void main(final String... args) {
+    public static void main(final String... args) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         pollLog4JConfigurationFileIfAvailable();
         LOG.info("Running LittleProxy with args: {}", Arrays.asList(args));
         final Options options = new Options();
@@ -62,6 +67,7 @@ public class Launcher {
         options.addOption(null, OPTION_SSL, false, "Encript inbond connection.");
         options.addOption(null, OPTION_SSL_KEYSTORE_FILE, true, "Ssl keystore file.");
         options.addOption(null, OPTION_FILE, true, "Config file.");
+        options.addOption(null, OPTION_PROXY_AUTHENTICATOR, true, "Proxy authenticator");
         
         
         final CommandLineParser parser = new PosixParser();
@@ -114,6 +120,12 @@ public class Launcher {
         	bootstrap.withAuthenticateSslClients(!cmd.hasOption(OPTION_SSL_KEYSTORE_FILE));
         	LOG.info("Encript inbond connection. Ssl keystore file '" + keyStoreFile + "'");
             bootstrap.withSslEngineSource(new SelfSignedSslEngineSource(keyStoreFile));
+        }
+        
+        if (cmd.hasOption(OPTION_PROXY_AUTHENTICATOR)) {
+        	String proxyAuthenticatorClass = cmd.getOptionValue(OPTION_PROXY_AUTHENTICATOR);
+        	LOG.info("Proxy authenticator = '" + proxyAuthenticatorClass + "'");
+            bootstrap.withProxyAuthenticator((ProxyAuthenticator) (Class.forName(proxyAuthenticatorClass).newInstance()));
         }
         
         if (cmd.hasOption(OPTION_DNSSEC)) {
