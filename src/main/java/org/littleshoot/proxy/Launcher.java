@@ -11,7 +11,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.cli.UnrecognizedOptionException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.littleshoot.proxy.extras.SelfSignedMitmManager;
 import org.littleshoot.proxy.extras.SelfSignedSslEngineSource;
@@ -37,7 +36,11 @@ public class Launcher {
     
     private static final String OPTION_SSL = "ssl";
     
+    private static final String OPTION_SSL_KEYSTORE_FILE = "ssl_keystore_file";
+    
     private static final String OPTION_FILE = "file";
+    
+   
     
 
     /**
@@ -57,7 +60,10 @@ public class Launcher {
                 "Display command line help.");
         options.addOption(null, OPTION_MITM, false, "Run as man in the middle.");
         options.addOption(null, OPTION_SSL, false, "Encript inbond connection.");
+        options.addOption(null, OPTION_SSL_KEYSTORE_FILE, true, "Ssl keystore file.");
         options.addOption(null, OPTION_FILE, true, "Config file.");
+        
+        
         final CommandLineParser parser = new PosixParser();
         final CommandLine cmd;
         try {
@@ -104,11 +110,10 @@ public class Launcher {
         }
         
         if (cmd.hasOption(OPTION_SSL)) {
-            LOG.info("Encript inbond connection.");
-            bootstrap.withSslEngineSource(new SelfSignedSslEngineSource("./littleproxy_keystore.jks"));
+        	String keyStoreFile = cmd.hasOption(OPTION_SSL_KEYSTORE_FILE)?cmd.getOptionValue(OPTION_FILE):"./littleproxy_keystore.jks";
+            LOG.info("Encript inbond connection. Ssl keystore file '" + keyStoreFile + "'");
+            bootstrap.withSslEngineSource(new SelfSignedSslEngineSource(keyStoreFile));
         }
-        
-        
         
         if (cmd.hasOption(OPTION_DNSSEC)) {
             final String val = cmd.getOptionValue(OPTION_DNSSEC);
