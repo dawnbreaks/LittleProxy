@@ -42,8 +42,6 @@ public class Launcher {
     
     private static final String OPTION_PROXY_AUTHENTICATOR = "proxy_authenticator";
     
-    private static final String OPTION_PROXY_AUTHENTICATOR_DIGEST = "proxy_authenticator_digest";
-    
 
     /**
      * Starts the proxy from the command line.
@@ -68,7 +66,6 @@ public class Launcher {
         options.addOption(null, OPTION_SSL_KEYSTORE_FILE, true, "Ssl keystore file.");
         options.addOption(null, OPTION_FILE, true, "Config file.");
         options.addOption(null, OPTION_PROXY_AUTHENTICATOR, true, "Proxy authenticator");
-        options.addOption(null, OPTION_PROXY_AUTHENTICATOR_DIGEST, true, "Proxy authenticator");
         
         final CommandLineParser parser = new PosixParser();
         final CommandLine cmd;
