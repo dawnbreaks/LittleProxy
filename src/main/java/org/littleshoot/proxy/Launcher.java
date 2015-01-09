@@ -110,7 +110,7 @@ public class Launcher {
         }
         
         if (cmd.hasOption(OPTION_SSL)) {
-        	String keyStoreFile = cmd.hasOption(OPTION_SSL_KEYSTORE_FILE)?cmd.getOptionValue(OPTION_FILE):"./littleproxy_keystore.jks";
+        	String keyStoreFile = cmd.hasOption(OPTION_SSL_KEYSTORE_FILE)?cmd.getOptionValue(OPTION_SSL_KEYSTORE_FILE):"./littleproxy_keystore.jks";
             LOG.info("Encript inbond connection. Ssl keystore file '" + keyStoreFile + "'");
             bootstrap.withSslEngineSource(new SelfSignedSslEngineSource(keyStoreFile));
         }
