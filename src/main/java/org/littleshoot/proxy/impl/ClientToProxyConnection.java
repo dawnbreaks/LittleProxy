@@ -803,25 +803,9 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
             return true;
         }
 
-        List<String> values = request.headers().getAll(
-                HttpHeaders.Names.PROXY_AUTHORIZATION);
-        String fullValue = values.iterator().next();
-        String value = StringUtils.substringAfter(fullValue, "Basic ")
-                .trim();
-        byte[] decodedValue = Base64.decodeBase64(value);
-        try {
-            String decodedString = new String(decodedValue, "UTF-8");
-            String userName = StringUtils.substringBefore(decodedString,
-                    ":");
-            String password = StringUtils.substringAfter(decodedString,
-                    ":");
-            if (!authenticator.authenticate(userName,
-                    password)) {
-            	writeDigestAuthenticationRequired();
-                return true;
-            }
-        } catch (UnsupportedEncodingException e) {
-            LOG.error("Could not decode?", e);
+        if (authenticator.authenticate(request)) {
+        	writeDigestAuthenticationRequired();
+            return true;
         }
 
         LOG.debug("Got proxy authorization!");

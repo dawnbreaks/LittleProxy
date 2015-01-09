@@ -1,5 +1,7 @@
 package org.littleshoot.proxy;
 
+import io.netty.handler.codec.http.HttpRequest;
+
 /**
  * Interface for objects that can authenticate someone for using our Proxy on
  * the basis of a username and password.
@@ -15,5 +17,5 @@ public interface ProxyAuthenticator {
      * @return <code>true</code> if the credentials are acceptable, otherwise
      *         <code>false</code>.
      */
-    boolean authenticate(String userName, String password);
+    boolean authenticate(HttpRequest request);
 }

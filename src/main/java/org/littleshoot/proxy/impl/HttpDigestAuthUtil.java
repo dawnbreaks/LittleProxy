@@ -4,11 +4,13 @@
  */
 package org.littleshoot.proxy.impl;
 
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.codec.digest.DigestUtils;
@@ -16,14 +18,18 @@ import org.apache.commons.lang3.StringUtils;
 
 public class HttpDigestAuthUtil  {
 
-	public static final String authMethod = "auth";
-	public static final String userName = "lubin";
-	public static final String password = "lubin";
-	public static final String realm = "Restricted Files";
+	private static final String authMethod = "auth";
+	private static final String userName = "lubin";
+	private static final String password = "lubin";
+	private static final String realm = "Restricted Files";
 
-	public static String nonce = calculateNonce();
+	private static String nonce = calculateNonce();
     
-    public static boolean authenticate(HttpRequest request, String authHeader) {
+    public static boolean authenticate(HttpRequest request) {
+    	
+    	 List<String> values = request.headers().getAll(HttpHeaders.Names.PROXY_AUTHORIZATION);
+         String authHeader = values.iterator().next().trim();
+         
         if (authHeader.startsWith("Digest")) {
             // parse the values of the Authentication header into a hashmap
             HashMap<String, String> headerValues = parseHeader(authHeader);
