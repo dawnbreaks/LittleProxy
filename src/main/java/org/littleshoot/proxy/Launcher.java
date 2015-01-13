@@ -11,9 +11,9 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.cli.UnrecognizedOptionException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.littleshoot.proxy.extras.SelfSignedMitmManager;
+import org.littleshoot.proxy.extras.SelfSignedSslEngineSource;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.littleshoot.proxy.impl.ProxyUtils;
 import org.slf4j.Logger;
@@ -33,14 +33,26 @@ public class Launcher {
     private static final String OPTION_HELP = "help";
     
     private static final String OPTION_MITM = "mitm";
+    
+    private static final String OPTION_SSL = "ssl";
+    
+    private static final String OPTION_SSL_KEYSTORE_FILE = "ssl_keystore_file";
+    
+    private static final String OPTION_FILE = "file";
+    
+    private static final String OPTION_PROXY_AUTHENTICATOR = "proxy_authenticator";
+    
 
     /**
      * Starts the proxy from the command line.
      * 
      * @param args
      *            Any command line arguments.
+     * @throws ClassNotFoundException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
      */
-    public static void main(final String... args) {
+    public static void main(final String... args) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         pollLog4JConfigurationFileIfAvailable();
         LOG.info("Running LittleProxy with args: {}", Arrays.asList(args));
         final Options options = new Options();
@@ -50,6 +62,10 @@ public class Launcher {
         options.addOption(null, OPTION_HELP, false,
                 "Display command line help.");
         options.addOption(null, OPTION_MITM, false, "Run as man in the middle.");
+        options.addOption(null, OPTION_SSL, false, "Encript inbond connection.");
+        options.addOption(null, OPTION_SSL_KEYSTORE_FILE, true, "Ssl keystore file.");
+        options.addOption(null, OPTION_FILE, true, "Config file.");
+        options.addOption(null, OPTION_PROXY_AUTHENTICATOR, true, "Proxy authenticator");
         
         final CommandLineParser parser = new PosixParser();
         final CommandLine cmd;
@@ -84,14 +100,29 @@ public class Launcher {
         }
 
         System.out.println("About to start server on port: " + port);
+        String configFile = cmd.hasOption(OPTION_FILE)?cmd.getOptionValue(OPTION_FILE):"./littleproxy.properties";
+        LOG.info("Bootstrap from file '" + configFile + "'.");
         HttpProxyServerBootstrap bootstrap = DefaultHttpProxyServer
-                .bootstrapFromFile("./littleproxy.properties")
+                .bootstrapFromFile(configFile)
                 .withPort(port)
                 .withAllowLocalOnly(false);
         
         if (cmd.hasOption(OPTION_MITM)) {
             LOG.info("Running as Man in the Middle");
             bootstrap.withManInTheMiddle(new SelfSignedMitmManager());
+        }
+        
+        if (cmd.hasOption(OPTION_SSL)) {
+        	String keyStoreFile = cmd.hasOption(OPTION_SSL_KEYSTORE_FILE)?cmd.getOptionValue(OPTION_SSL_KEYSTORE_FILE):"./littleproxy_keystore.jks";
+        	bootstrap.withAuthenticateSslClients(!cmd.hasOption(OPTION_SSL_KEYSTORE_FILE));
+        	LOG.info("Encript inbond connection. Ssl keystore file '" + keyStoreFile + "'");
+            bootstrap.withSslEngineSource(new SelfSignedSslEngineSource(keyStoreFile));
+        }
+        
+        if (cmd.hasOption(OPTION_PROXY_AUTHENTICATOR)) {
+        	String proxyAuthenticatorClass = cmd.getOptionValue(OPTION_PROXY_AUTHENTICATOR);
+        	LOG.info("Proxy authenticator = '" + proxyAuthenticatorClass + "'");
+            bootstrap.withProxyAuthenticator((ProxyAuthenticator) (Class.forName(proxyAuthenticatorClass).newInstance()));
         }
         
         if (cmd.hasOption(OPTION_DNSSEC)) {

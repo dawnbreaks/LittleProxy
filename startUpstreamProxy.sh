@@ -11,7 +11,7 @@ jvmOptions="-server -XX:PermSize=24M -XX:MaxPermSize=64m -Xms128m -Xmx448m -XX:+
 
 
 printf "Starting service.....\n" 
-nohup java -Djava.net.preferIPv4Stack=true  $jvmOptions -cp $classpath   org.littleshoot.proxy.Launcher --port 1443 --ssl --ssl_keystore_file ./littleProxy_xiaoman.cn.jks  --proxy_authenticator org.littleshoot.proxy.impl.BasicProxyAuthenticator 2>&1 >> $currentDir/littleProxy.log  & 
+nohup java -Djava.net.preferIPv4Stack=true  $jvmOptions -cp $classpath   org.littleshoot.proxy.Launcher --port 2443 --file ./upstreamLittleproxy.properties --ssl 2>&1 >> $currentDir/upstream.log  & 
 printf "Done... Ok"
 
-tail -f littleProxy.log
+tail -f upstream.log 

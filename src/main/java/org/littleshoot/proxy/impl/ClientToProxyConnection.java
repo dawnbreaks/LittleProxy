@@ -1,29 +1,52 @@
 package org.littleshoot.proxy.impl;
 
+import static org.littleshoot.proxy.impl.ConnectionState.AWAITING_CHUNK;
+import static org.littleshoot.proxy.impl.ConnectionState.AWAITING_INITIAL;
+import static org.littleshoot.proxy.impl.ConnectionState.AWAITING_PROXY_AUTHENTICATION;
+import static org.littleshoot.proxy.impl.ConnectionState.DISCONNECT_REQUESTED;
+import static org.littleshoot.proxy.impl.ConnectionState.NEGOTIATING_CONNECT;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
-import org.littleshoot.proxy.*;
 
-import javax.net.ssl.SSLSession;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.littleshoot.proxy.impl.ConnectionState.*;
+import javax.net.ssl.SSLSession;
+
+import org.apache.commons.lang3.StringUtils;
+import org.littleshoot.proxy.ActivityTracker;
+import org.littleshoot.proxy.FlowContext;
+import org.littleshoot.proxy.FullFlowContext;
+import org.littleshoot.proxy.HttpFilters;
+import org.littleshoot.proxy.ProxyAuthenticator;
+import org.littleshoot.proxy.SslEngineSource;
 
 /**
  * <p>
@@ -799,41 +822,25 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
             return false;
 
         if (!request.headers().contains(HttpHeaders.Names.PROXY_AUTHORIZATION)) {
-            writeAuthenticationRequired();
+        	writeAuthenticationRequired();
             return true;
         }
 
-        List<String> values = request.headers().getAll(
-                HttpHeaders.Names.PROXY_AUTHORIZATION);
-        String fullValue = values.iterator().next();
-        String value = StringUtils.substringAfter(fullValue, "Basic ")
-                .trim();
-        byte[] decodedValue = Base64.decodeBase64(value);
-        try {
-            String decodedString = new String(decodedValue, "UTF-8");
-            String userName = StringUtils.substringBefore(decodedString,
-                    ":");
-            String password = StringUtils.substringAfter(decodedString,
-                    ":");
-            if (!authenticator.authenticate(userName,
-                    password)) {
-                writeAuthenticationRequired();
-                return true;
-            }
-        } catch (UnsupportedEncodingException e) {
-            LOG.error("Could not decode?", e);
+        if (!authenticator.authenticate(request)) {
+        	writeAuthenticationRequired();
+            return true;
         }
 
-        LOG.info("Got proxy authorization!");
+        LOG.debug("Got proxy authorization!");
         // We need to remove the header before sending the request on.
         String authentication = request.headers().get(
                 HttpHeaders.Names.PROXY_AUTHORIZATION);
-        LOG.info(authentication);
+        LOG.debug(authentication);
         request.headers().remove(HttpHeaders.Names.PROXY_AUTHORIZATION);
         authenticated.set(true);
         return false;
     }
-
+    
     private void writeAuthenticationRequired() {
         String body = "<!DOCTYPE HTML \"-//IETF//DTD HTML 2.0//EN\">\n"
                 + "<html><head>\n"
@@ -850,11 +857,12 @@ public class ClientToProxyConnection extends ProxyConnection<HttpRequest> {
                 HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED, body);
         response.headers().set("Date", ProxyUtils.httpDate());
         response.headers().set("Proxy-Authenticate",
-                "Basic realm=\"Restricted Files\"");
+        		proxyServer.getProxyAuthenticator().getAuthenticateHeader());
         response.headers().set("Date", ProxyUtils.httpDate());
         write(response);
     }
 
+    
     /***************************************************************************
      * Request/Response Rewriting
      **************************************************************************/
